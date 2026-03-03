@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/GridPainter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/health_provider.dart';
+import '../providers/theme_provider.dart';
 import '../widgets/health_metric_row.dart';
 import 'add_entry_screen.dart';
 import 'analytics_screen.dart';
@@ -14,28 +16,39 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final brandColor = AppTheme.brandPurple;
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Premium Dark Mode Color Palette
+    const Color darkBgBase = Color(0xFF0A0A0B); // Deepest Black
+    const Color darkIndigoDepth = Color(0xFF1A122E); // Purple tint for depth
 
     return Scaffold(
-      // 1. Dynamic Background with Gradient and Pattern
+      backgroundColor: isDark ? darkBgBase : theme.colorScheme.surface,
       body: Container(
+        // 1. Updated: Multi-layered Gradient for Dark Mode Depth
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.surface,
-              theme.colorScheme.primaryContainer.withOpacity(0.2),
+              isDark ? darkBgBase : theme.colorScheme.surface,
+              isDark
+                  ? darkIndigoDepth.withOpacity(0.4)
+                  : theme.colorScheme.primaryContainer.withOpacity(0.25),
             ],
           ),
         ),
         child: Stack(
           children: [
-            // 2. Subtle geometric background pattern
+            // 2. Updated: Subtle Indigo Grid for Dark Mode
             Positioned.fill(
               child: Opacity(
-                opacity: 0.03,
-                child: CustomPaint(painter: GridPainter()),
+                opacity: isDark ? 0.08 : 0.04,
+                child: CustomPaint(
+                  painter: GridPainter(
+                    color: isDark ? const Color(0xFF3F3F46) : Colors.grey,
+                  ),
+                ),
               ),
             ),
 
@@ -48,7 +61,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 slivers: [
                   SliverAppBar.large(
-                    backgroundColor: Colors.transparent, // Glass effect
+                    backgroundColor: Colors.transparent,
                     title: const Text(
                       'My Health',
                       style: TextStyle(
@@ -58,8 +71,9 @@ class HomeScreen extends StatelessWidget {
                     ),
                     surfaceTintColor: Colors.transparent,
                     actions: [
+                      _buildThemeToggle(context, theme),
                       Padding(
-                        padding: const EdgeInsets.only(right: 16),
+                        padding: const EdgeInsets.only(right: 16, left: 8),
                         child: _buildHeaderAction(context, theme),
                       ),
                     ],
@@ -75,12 +89,7 @@ class HomeScreen extends StatelessWidget {
                       }
 
                       return SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(
-                          16,
-                          8,
-                          16,
-                          120,
-                        ), // More breathing room
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate((
                             context,
@@ -99,11 +108,10 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: _buildModernFAB(context, brandColor),
+      floatingActionButton: _buildModernFAB(context),
     );
   }
 
-  // 3. Modern Glass-style Header Action
   Widget _buildHeaderAction(BuildContext context, ThemeData theme) {
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -113,33 +121,81 @@ class HomeScreen extends StatelessWidget {
       child: Hero(
         tag: 'analytics_icon',
         child: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.1),
+            color: theme.colorScheme.primary.withOpacity(0.12),
             shape: BoxShape.circle,
             border: Border.all(
               color: theme.colorScheme.primary.withOpacity(0.2),
             ),
           ),
           child: Icon(
-            Icons.insert_chart_outlined,
+            Icons.insights_rounded,
             color: theme.colorScheme.primary,
+            size: 22,
           ),
         ),
       ),
     );
   }
 
+  Widget _buildModernFAB(BuildContext context) {
+    final theme = Theme.of(context);
+    return FloatingActionButton.extended(
+      onPressed: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AddEntryScreen()),
+      ),
+      backgroundColor: theme.colorScheme.primary,
+      foregroundColor: theme.colorScheme.onPrimary,
+      elevation: 6,
+      highlightElevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      icon: const Icon(Icons.add_rounded, size: 24),
+      label: const Text(
+        'New Entry',
+        style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.2),
+      ),
+    );
+  }
+
+  Widget _buildThemeToggle(BuildContext context, ThemeData theme) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
+        final isDark =
+            themeProvider.themeMode == ThemeMode.dark ||
+            (themeProvider.themeMode == ThemeMode.system &&
+                theme.brightness == Brightness.dark);
+
+        return IconButton(
+          onPressed: () => themeProvider.toggleTheme(!isDark),
+          icon: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            transitionBuilder: (child, anim) => RotationTransition(
+              turns: anim,
+              child: FadeTransition(opacity: anim, child: child),
+            ),
+            child: Icon(
+              isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
+              key: ValueKey(isDark),
+              color: isDark ? Colors.orangeAccent : theme.colorScheme.primary,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildAnimatedCard(BuildContext context, dynamic entry, int index) {
     return TweenAnimationBuilder<double>(
-      duration: Duration(milliseconds: 500 + (index * 80)),
-      curve: Curves.easeOutBack, // Playful entrance
+      duration: Duration(milliseconds: 400 + (index * 60)),
+      curve: Curves.easeOutQuart,
       tween: Tween(begin: 0, end: 1),
       builder: (context, value, child) {
         return Opacity(
           opacity: value,
           child: Transform.translate(
-            offset: Offset(0, 50 * (1 - value)),
+            offset: Offset(0, 20 * (1 - value)),
             child: child,
           ),
         );
@@ -161,21 +217,28 @@ class HomeScreen extends StatelessWidget {
         ),
         child: Container(
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
-            borderRadius: BorderRadius.circular(32), // Softer corners
+            // 3. Updated: Glassmorphic Surface for Dark Mode
+            color: isDark
+                ? const Color(0xFF1C1C1E).withOpacity(0.8)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: theme.shadowColor.withOpacity(0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: Colors.black.withOpacity(isDark ? 0.6 : 0.04),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
             ],
+            // 4. Updated: Edge-Lighting effect for Dark Mode contrast
             border: Border.all(
-              color: isDark ? Colors.white10 : Colors.black.withOpacity(0.03),
+              color: isDark
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.black.withOpacity(0.04),
+              width: 1,
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
               children: [
                 Row(
@@ -190,7 +253,7 @@ class HomeScreen extends StatelessWidget {
                             DateFormat('EEEE, MMM d').format(entry.date),
                             style: const TextStyle(
                               fontWeight: FontWeight.w900,
-                              fontSize: 18,
+                              fontSize: 17,
                             ),
                           ),
                           Text(
@@ -203,10 +266,10 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: Colors.grey,
+                      size: 12,
+                      color: theme.colorScheme.outlineVariant,
                     ),
                   ],
                 ),
@@ -237,49 +300,21 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildMoodIcon(dynamic entry) {
-    return Hero(
-      tag: 'mood-${entry.date.toIso8601String()}',
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: _getMoodColor(entry.mood).withOpacity(0.15),
-          shape: BoxShape.circle,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: Text(
-            _getMoodEmoji(entry.mood),
-            style: const TextStyle(fontSize: 24),
-          ),
-        ),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _getMoodColor(entry.mood).withOpacity(0.12),
+        shape: BoxShape.circle,
       ),
-    );
-  }
-
-  Widget _buildModernFAB(BuildContext context, Color color) {
-    return FloatingActionButton.extended(
-      onPressed: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AddEntryScreen()),
-      ),
-      backgroundColor: color,
-      foregroundColor: Colors.white,
-      elevation: 8,
-      extendedPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      icon: const Icon(Icons.add_rounded, size: 28),
-      label: const Text(
-        'New Entry',
-        style: TextStyle(
-          fontWeight: FontWeight.w900,
-          fontSize: 16,
-          letterSpacing: 0.5,
-        ),
+      child: Text(
+        _getMoodEmoji(entry.mood),
+        style: const TextStyle(fontSize: 22),
       ),
     );
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -287,16 +322,16 @@ class HomeScreen extends StatelessWidget {
           Icon(
             Icons.spa_rounded,
             size: 80,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            color: theme.colorScheme.primary.withOpacity(0.2),
           ),
           const SizedBox(height: 24),
           const Text(
             'Your Health Journey',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
           ),
-          const Text(
+          Text(
             'Log your first day to start tracking.',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -321,32 +356,4 @@ class HomeScreen extends StatelessWidget {
         return '🤔';
     }
   }
-}
-
-// Reusing your GridPainter for background depth
-class GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    var paint = Paint()
-      ..color = Colors.grey
-      ..strokeWidth = 0.5
-      ..style = PaintingStyle.stroke;
-    for (var i = 0; i < size.width; i += 50) {
-      canvas.drawLine(
-        Offset(i.toDouble(), 0),
-        Offset(i.toDouble(), size.height),
-        paint,
-      );
-    }
-    for (var i = 0; i < size.height; i += 50) {
-      canvas.drawLine(
-        Offset(0, i.toDouble()),
-        Offset(size.width, i.toDouble()),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

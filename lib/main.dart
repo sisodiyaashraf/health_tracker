@@ -8,6 +8,7 @@ import 'features/health/data/models/health_entry.dart';
 import 'features/health/data/local_data_source/health_local_datasource.dart';
 import 'features/health/data/repositories/health_repository_impl.dart';
 import 'features/health/presentation/providers/health_provider.dart';
+import 'features/health/presentation/providers/theme_provider.dart';
 import 'features/health/presentation/screens/home_screen.dart';
 import 'features/health/presentation/screens/onboarding_screen.dart';
 import 'core/theme/app_theme.dart';
@@ -46,7 +47,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // 4. Dependency Injection: Data Source -> Repository -> Provider
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(
           create: (_) {
             final localDataSource = HealthLocalDataSource();
@@ -57,17 +58,22 @@ class MyApp extends StatelessWidget {
           },
         ),
       ],
-      child: MaterialApp(
-        title: 'Health Insight Tracker',
-        debugShowCheckedModeBanner: false,
+      // Use a Consumer or context.watch here to rebuild when the theme changes
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Health Insight Tracker',
+            debugShowCheckedModeBanner: false,
 
-        // --- Theme Management from core/theme folder ---
-        themeMode: ThemeMode.system,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
+            // FIXED: Link the themeMode to the provider's state
+            themeMode: themeProvider.themeMode,
 
-        // --- Navigation Logic ---
-        home: isFirstRun ? const OnboardingScreen() : const HomeScreen(),
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+
+            home: isFirstRun ? const OnboardingScreen() : const HomeScreen(),
+          );
+        },
       ),
     );
   }

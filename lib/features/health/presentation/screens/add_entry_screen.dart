@@ -19,6 +19,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   final _waterController = TextEditingController();
   final _noteController = TextEditingController();
 
+  // Premium Dark Mode Color Palette
+  static const Color darkBgBase = Color(0xFF0A0A0B);
+  static const Color darkIndigoDepth = Color(0xFF1A122E);
+
   void _submitData() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -66,33 +70,43 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? darkBgBase : theme.colorScheme.surface,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.surface,
-              theme.colorScheme.primaryContainer.withOpacity(0.15),
+              isDark ? darkBgBase : theme.colorScheme.surface,
+              isDark
+                  ? darkIndigoDepth.withOpacity(0.4)
+                  : theme.colorScheme.primaryContainer.withOpacity(0.15),
             ],
           ),
         ),
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // FIXED APPBAR
             SliverAppBar.medium(
-              pinned: true, // Keeps the title visible when scrolled
-              floating: false,
-              backgroundColor: theme.colorScheme.surface,
-              surfaceTintColor:
-                  theme.colorScheme.surface, // Material 3 elevation tint
+              pinned: true,
+              backgroundColor: Colors.transparent, // Glass effect
               elevation: 0,
-              title: const Text(
+              leading: IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+              title: Text(
                 'Log Entry',
-                style: TextStyle(fontWeight: FontWeight.w900),
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
               ),
               centerTitle: true,
             ),
@@ -117,9 +131,15 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.5),
+                            color: isDark
+                                ? Colors.white.withOpacity(0.05)
+                                : Colors.white.withOpacity(0.5),
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: Colors.white),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.1)
+                                  : Colors.white,
+                            ),
                           ),
                           child: MoodSelector(
                             selectedMood: _selectedMood,
@@ -135,6 +155,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                         ),
                         const SizedBox(height: 16),
                         _buildModernField(
+                          context: context,
                           controller: _sleepController,
                           label: 'Sleep Duration',
                           hint: 'Hours (e.g., 7.5)',
@@ -149,6 +170,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                         ),
                         const SizedBox(height: 20),
                         _buildModernField(
+                          context: context,
                           controller: _waterController,
                           label: 'Water Intake',
                           hint: 'Liters (e.g., 2.0)',
@@ -162,6 +184,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                         ),
                         const SizedBox(height: 20),
                         _buildModernField(
+                          context: context,
                           controller: _noteController,
                           label: 'Daily Notes',
                           hint: 'Any highlights or challenges?',
@@ -238,6 +261,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   }
 
   Widget _buildModernField({
+    required BuildContext context,
     required TextEditingController controller,
     required String label,
     required String hint,
@@ -246,6 +270,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     int maxLines = 1,
     String? Function(String?)? validator,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -259,24 +285,42 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         TextFormField(
           controller: controller,
           maxLines: maxLines,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
           keyboardType: maxLines > 1
               ? TextInputType.multiline
               : TextInputType.numberWithOptions(decimal: true),
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: TextStyle(
+              color: isDark ? Colors.white38 : Colors.black38,
+            ),
             prefixIcon: Icon(icon, color: AppTheme.brandPurple),
             suffixText: suffix,
+            suffixStyle: const TextStyle(fontWeight: FontWeight.bold),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.6),
+            fillColor: isDark
+                ? Colors.white.withOpacity(0.05)
+                : Colors.white.withOpacity(0.6),
             contentPadding: const EdgeInsets.all(20),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(20),
-              borderSide: BorderSide.none,
+              borderSide: isDark
+                  ? const BorderSide(color: Colors.white10)
+                  : BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(20),
-              borderSide: BorderSide.none,
+              borderSide: isDark
+                  ? const BorderSide(color: Colors.white10)
+                  : BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: const BorderSide(
+                color: AppTheme.brandPurple,
+                width: 2,
+              ),
             ),
           ),
         ),

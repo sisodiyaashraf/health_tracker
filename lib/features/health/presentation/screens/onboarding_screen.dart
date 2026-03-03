@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/theme/GridPainter.dart';
 import 'home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -12,6 +13,12 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _controller = PageController();
   int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   Future<void> _completeOnboarding() async {
     try {
@@ -29,10 +36,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         );
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
+      }
     }
   }
 
@@ -46,12 +54,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     const Color brandPurple = Color(0xFF673AB7);
-    const Color deepPurple = Color(0xFF311B92); // Darker shade for gradient
+    const Color deepPurple = Color(0xFF311B92);
 
     return Scaffold(
       body: Container(
-        // 1. Premium Radial Gradient Background
         decoration: const BoxDecoration(
           gradient: RadialGradient(
             center: Alignment(-0.5, -0.5),
@@ -61,16 +71,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         child: Stack(
           children: [
-            // 2. Subtle Background Pattern Layer
             Positioned.fill(
               child: Opacity(
                 opacity: 0.05,
                 child: CustomPaint(painter: GridPainter()),
               ),
             ),
-
             Scaffold(
-              backgroundColor: Colors.transparent, // Let gradient show through
+              backgroundColor: Colors.transparent,
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
                 elevation: 0,
@@ -78,27 +86,50 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   AnimatedOpacity(
                     opacity: _currentPage < 2 ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 300),
-                    child: TextButton(
-                      onPressed: _currentPage < 2 ? _skipToLastPage : null,
-                      child: const Text(
-                        "Skip",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 10, right: 10),
+                      child: InkWell(
+                        onTap: _currentPage < 2 ? _skipToLastPage : null,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            // Glass effect optimized for background visibility
+                            color: Colors.white.withOpacity(
+                              isDark ? 0.1 : 0.15,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Text(
+                            "Skip",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 10),
                 ],
               ),
               body: Stack(
                 children: [
                   PageView(
                     controller: _controller,
-                    onPageChanged: (index) =>
-                        setState(() => _currentPage = index),
+                    onPageChanged: (index) {
+                      setState(() => _currentPage = index);
+                    },
                     children: [
                       _buildPage(
                         "Log Your Daily Vitals",
@@ -117,19 +148,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ],
                   ),
-
-                  // Bottom Panel
                   Positioned(
                     bottom: 0,
                     left: 0,
                     right: 0,
                     child: Container(
-                      height: 240,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.vertical(
+                      height: 250,
+                      decoration: BoxDecoration(
+                        // Adapt to theme surface for Dark Mode support
+                        color: theme.colorScheme.surface,
+                        borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(40),
                         ),
+                        boxShadow: [
+                          if (isDark)
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 20,
+                              offset: const Offset(0, -10),
+                            ),
+                        ],
                       ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 32,
@@ -141,14 +179,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: List.generate(
                               3,
-                              (index) => _buildIndicator(index),
+                              (index) => _buildIndicator(index, brandPurple),
                             ),
                           ),
                           const Spacer(),
                           AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
+                            duration: const Duration(milliseconds: 500),
                             child: _currentPage == 2
                                 ? ElevatedButton(
+                                    key: const ValueKey('cta_btn'),
                                     onPressed: _completeOnboarding,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: brandPurple,
@@ -159,17 +198,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(20),
                                       ),
+                                      elevation: 10,
                                     ),
                                     child: const Text(
                                       "Get Started",
                                       style: TextStyle(
                                         fontSize: 18,
                                         color: Colors.white,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w900,
                                       ),
                                     ),
                                   )
-                                : _buildModernNextButton(brandPurple),
+                                : _buildNavigationRow(brandPurple, theme),
                           ),
                         ],
                       ),
@@ -184,44 +224,104 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildModernNextButton(Color color) {
-    return GestureDetector(
-      onTap: () => _controller.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOutQuart,
-      ),
-      child: Container(
-        height: 64,
-        width: 64,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.4),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+  Widget _buildNavigationRow(Color color, ThemeData theme) {
+    return Row(
+      key: const ValueKey('nav_row'),
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _currentPage > 0
+            ? TextButton(
+                onPressed: () => _controller.previousPage(
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeInOutCubic,
+                ),
+                child: Text(
+                  "Back",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                  ),
+                ),
+              )
+            : const SizedBox(width: 60),
+        Row(
+          children: [
+            Text(
+              "Next",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
+            const SizedBox(width: 12),
+            _buildModernNextButton(color),
           ],
         ),
-        child: const Icon(
-          Icons.chevron_right_rounded,
-          size: 36,
-          color: Colors.white,
-        ),
+      ],
+    );
+  }
+
+  Widget _buildModernNextButton(Color color) {
+    double progress = (_currentPage + 1) / 3;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        _controller.nextPage(
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOutCubic,
+        );
+      },
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            height: 75,
+            width: 75,
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 4,
+              backgroundColor: color.withOpacity(0.1),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+          Container(
+            height: 59,
+            width: 59,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 20,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildIndicator(int index) {
-    bool isSelected = _currentPage == index;
+  Widget _buildIndicator(int index, Color activeColor) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(horizontal: 6),
       height: 6,
-      width: isSelected ? 30 : 10,
+      width: _currentPage == index ? 30 : 10,
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF673AB7) : Colors.grey.shade300,
+        color: _currentPage == index
+            ? activeColor
+            : Colors.grey.withOpacity(0.3),
         borderRadius: BorderRadius.circular(10),
       ),
     );
@@ -234,30 +334,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            height: 220,
-            width: 220,
+            height: 200,
+            width: 200,
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.15),
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white24, width: 2),
             ),
             padding: const EdgeInsets.all(30),
-            child: Image.asset(
-              imagePath,
-              fit: BoxFit.contain,
-              errorBuilder: (c, e, s) => const Icon(
-                Icons.spa_rounded,
-                size: 100,
-                color: Colors.white70,
-              ),
-            ),
+            child: Image.asset(imagePath, fit: BoxFit.contain),
           ),
-          const SizedBox(height: 50),
+          const SizedBox(height: 40),
           Text(
             title,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 28,
+              fontSize: 32,
               fontWeight: FontWeight.w900,
               color: Colors.white,
             ),
@@ -267,42 +359,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             description,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 17,
+              fontSize: 18,
               color: Colors.white.withOpacity(0.85),
               height: 1.6,
             ),
           ),
-          const SizedBox(height: 120),
+          // Using a spacer or flexible spacing is safer for varied screen heights
+          const SizedBox(height: 280),
         ],
       ),
     );
   }
-}
-
-// 3. Custom Painter for the background pattern
-class GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    var paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-    for (var i = 0; i < size.width; i += 40) {
-      canvas.drawLine(
-        Offset(i.toDouble(), 0),
-        Offset(i.toDouble(), size.height),
-        paint,
-      );
-    }
-    for (var i = 0; i < size.height; i += 40) {
-      canvas.drawLine(
-        Offset(0, i.toDouble()),
-        Offset(size.width, i.toDouble()),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
