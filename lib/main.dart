@@ -3,37 +3,34 @@ import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Architecture Imports
-import 'features/health/data/models/health_entry.dart';
-import 'features/health/data/local_data_source/health_local_datasource.dart';
-import 'features/health/data/repositories/health_repository_impl.dart';
-import 'features/health/presentation/providers/health_provider.dart';
-import 'features/health/presentation/providers/theme_provider.dart';
-import 'features/health/presentation/screens/home_screen.dart';
-import 'features/health/presentation/screens/onboarding_screen.dart';
-import 'core/theme/app_theme.dart';
+// Standardized Package Imports
+import 'package:health_tracker/features/health/data/models/health_entry.dart';
+import 'package:health_tracker/features/health/data/local_data_source/health_local_datasource.dart';
+import 'package:health_tracker/features/health/data/repositories/health_repository_impl.dart';
+import 'package:health_tracker/features/health/presentation/providers/health_provider.dart';
+import 'package:health_tracker/features/health/presentation/providers/theme_provider.dart';
+import 'package:health_tracker/features/health/presentation/screens/home_screen.dart';
+import 'package:health_tracker/features/health/presentation/screens/onboarding_screen.dart';
+import 'package:health_tracker/core/theme/app_theme.dart';
 
 void main() async {
-  // Ensure platform channels are ready
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // 1. Initialize Hive Local Storage
     await Hive.initFlutter();
 
-    // 2. Register Hive Adapter safely
+    // Register Hive Adapter
     if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(HealthEntryAdapter());
     }
 
-    // 3. Handle Onboarding state with SharedPreferences
     final prefs = await SharedPreferences.getInstance();
+    // Use 'is_first_run' to check if we show Onboarding
     final bool isFirstRun = prefs.getBool('is_first_run') ?? true;
 
     runApp(MyApp(isFirstRun: isFirstRun));
   } catch (e) {
     debugPrint("Startup Critical Error: $e");
-    // Fallback to safe state
     runApp(const MyApp(isFirstRun: true));
   }
 }
@@ -41,6 +38,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   final bool isFirstRun;
 
+  // Constructor with required named parameter
   const MyApp({super.key, required this.isFirstRun});
 
   @override
@@ -49,28 +47,30 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(
-          create: (_) {
+          create: (context) {
+            // Logic moved into a clean variable for readability
             final localDataSource = HealthLocalDataSource();
             final repository = HealthRepository(
               localDataSource: localDataSource,
             );
+
+            // Returns provider and immediately starts loading data
             return HealthProvider(repository)..loadEntries();
           },
         ),
       ],
-      // Use a Consumer or context.watch here to rebuild when the theme changes
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
             title: 'Health Insight Tracker',
             debugShowCheckedModeBanner: false,
 
-            // FIXED: Link the themeMode to the provider's state
+            // Dynamic theme switching
             themeMode: themeProvider.themeMode,
-
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
 
+            // Select starting screen based on first-run logic
             home: isFirstRun ? const OnboardingScreen() : const HomeScreen(),
           );
         },

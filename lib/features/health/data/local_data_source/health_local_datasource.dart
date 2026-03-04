@@ -5,17 +5,32 @@ import '../models/health_entry.dart';
 class HealthLocalDataSource implements IHealthLocalDataSource {
   static const String _boxName = 'health_entries';
 
+  // Helper to maintain key consistency across save/delete
+  String _generateKey(DateTime date) {
+    return date.toIso8601String().split('T')[0];
+  }
+
   @override
   Future<void> saveEntry(HealthEntry entry) async {
     final box = await Hive.openBox<HealthEntry>(_boxName);
-    // Use the date as the key to enforce the one-entry-per-day rule
-    String key = entry.date.toIso8601String().split('T')[0];
+    final String key = _generateKey(entry.date);
     await box.put(key, entry);
+  }
+
+  // NEW: Implementation of the delete method
+  @override
+  Future<void> deleteEntry(HealthEntry entry) async {
+    final box = await Hive.openBox<HealthEntry>(_boxName);
+    final String key = _generateKey(entry.date);
+
+    // Directly removes the record associated with this date key
+    await box.delete(key);
   }
 
   @override
   Future<List<HealthEntry>> getEntries() async {
     final box = await Hive.openBox<HealthEntry>(_boxName);
+    // Returns the list sorted newest to oldest for the Home Screen
     return box.values.toList()..sort((a, b) => b.date.compareTo(a.date));
   }
 }
