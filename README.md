@@ -1,58 +1,220 @@
-🩺 Health Insight Tracker
-A Premium, Professional-Grade Health Monitoring Solution
+<h1 align="center">🩺 Health Insight Tracker</h1>
 
-This application is a high-fidelity Flutter solution built to track daily health vitals. It showcases a refined balance between aesthetic excellence and technical rigor, featuring a custom glassmorphic design system and a strictly decoupled Clean Architecture.
+<p align="center">
+  <strong>Premium Flutter Health Tracking Application</strong><br/>
+  Clean Architecture • Provider State Management • Hive NoSQL • Glassmorphic UI
+</p>
 
-🚀 Key Features
-Daily Vital Logging: A streamlined interface for recording mood, sleep duration, and water intake in seconds.
+<p align="center">
+  A professional-grade, offline-first mobile app for tracking daily health vitals 
+  including mood, sleep duration, and water intake — built with scalability and 
+  architectural discipline in mind.
+</p>
 
-Intelligent Validation: Proprietary guardrails ensuring data integrity, including 24h sleep caps and a "one-entry-per-day" restriction.
+---
 
-Deep Analytics: Interactive 7-day trend reports that calculate averages and mood frequency.
+## 📌 Overview
 
-Trend Intelligence: Visual indicators that compare current performance against the previous week to provide actionable feedback.
+**Health Insight Tracker** is a high-fidelity Flutter application designed to demonstrate:
 
-Premium UX: Featuring a custom glassmorphism design system, parallax onboarding effects, and staggered list animations.
+- Advanced state management using **Provider**
+- Feature-first **Clean Architecture**
+- High-performance local persistence with **Hive (NoSQL)**
+- Glassmorphic UI system with custom painters
+- Offline-first reliability
+- Reactive analytics with 7-day trend intelligence
 
-Offline-First Reliability: Robust local persistence ensures data is available anywhere, anytime.
+This project serves as both a production-ready foundation and a portfolio-level showcase of modern Flutter engineering.
 
-🛠 Tech Stack & Architecture
-State Management: Provider
-I implemented Provider to manage the application state. It was selected for its efficiency in handling dependency injection and its ability to maintain a highly performant, reactive UI while keeping the business logic strictly separated from the presentation layer.
+---
 
-Architecture: Clean Architecture (Feature-First)
-The codebase follows a modular, feature-first Clean Architecture to ensure scalability and ease of testing.
+## 🚀 Key Features
 
-Data Layer: Encapsulates Hive database initialization, TypeAdapters, and local storage repositories.
+### 📝 Daily Health Logging
+- Mood tracking
+- Sleep duration input (with 24-hour validation cap)
+- Water intake recording
+- One-entry-per-day enforcement
 
-Domain/Logic Layer: Centralized via HealthProvider, acting as the "Single Source of Truth" for the app’s state.
+### 📊 7-Day Analytics Engine
+- Automatic rolling average calculations
+- Mood frequency insights
+- Week-over-week comparison indicators
+- Performance trend visualization
 
-Presentation Layer: Utilizes a library of reusable widgets and custom painters (e.g., GridPainter) to maintain a DRY (Don't Repeat Yourself) codebase.
+### 🛡 Intelligent Data Validation
+- Input guardrails for data integrity
+- Logical sleep boundaries
+- Duplicate-entry prevention
 
-Local Persistence: Hive NoSQL
-Hive was chosen over traditional SQL solutions for its superior speed and lightweight footprint. As a NoSQL store, it provides near-instant read/write capabilities, which is critical for a fluid mobile experience.
+### 🎨 Premium User Experience
+- Custom glassmorphism design system
+- Parallax onboarding transitions
+- Staggered list animations
+- Micro-interaction feedback
 
-🏗 Key Decisions & Assumptions
-Data Sovereignty: Given the sensitivity of health data, I assumed a "Privacy-First" stance. All data is stored 100% on-device with zero cloud exposure.
+### 🌐 Offline-First Architecture
+- Instant read/write operations
+- Zero network dependency
+- Persistent local storage using Hive
 
-Boutique Design: I moved away from standard Material Design to a custom, purple-branded "Glassmorphic" theme to differentiate the product in a crowded market.
+---
 
-Comparative Analytics: Trends are calculated by comparing the current 7-day window against the previous 7-day window to offer a true sense of progress.
+## 🏗 Architecture
 
-🔮 Future Roadmap
-📈 Data Portability: Implementation of PDF/CSV export functionality for clinical sharing.
+This project follows a **Feature-First Clean Architecture** pattern for scalability and maintainability.
 
-🔔 Smart Reminders: Local notification system to encourage consistent logging.
+### 📂 Layer Breakdown
 
-⌚ Ecosystem Integration: Syncing with Google Fit and Apple Health for automated vital tracking.
+#### Data Layer
+- Hive database initialization
+- TypeAdapters
+- Local repository implementations
 
-🌙 True Dark Mode: An optimized OLED-friendly theme for nighttime use.
+#### Domain Layer
+- Business logic abstraction
+- Centralized state authority via `HealthProvider`
+- Single Source of Truth principle
 
-⚙️ Getting Started
-Environment: Ensure Flutter (latest stable) is installed.
+#### Presentation Layer
+- Reusable widgets
+- Modular UI components
+- Custom painters (e.g., `GridPainter`)
+- Strict separation of concerns
 
-Dependencies: Run flutter pub get.
+---
 
-Code Generation: Run flutter pub run build_runner build to generate Hive TypeAdapters.
+## 🛠 Tech Stack
 
-Deployment: Launch on a physical device or emulator.
+| Category | Technology |
+|----------|------------|
+| Framework | Flutter |
+| Language | Dart |
+| State Management | Provider |
+| Local Database | Hive (NoSQL) |
+| Architecture | Clean Architecture (Feature-First) |
+| Code Generation | build_runner |
+| Testing | Flutter Test |
+
+---
+
+## 📊 Project Structure
+
+```plaintext
+lib/
+├── core/               # Themes, constants, custom painters
+├── features/
+│   └── health/
+│       ├── data/       # Models, data sources, repositories
+│       ├── domain/     # Use cases (optional abstraction)
+│       └── presentation/
+│           ├── providers/
+│           ├── screens/
+│           └── widgets/
+└── main.dart
+```
+
+---
+
+## 🎥 App Walkthrough
+
+> Includes entry logging flow, analytics calculations, and theme toggling.
+<img width="360" height="720" alt="Screenshot_20260303_222442" src="https://github.com/user-attachments/assets/3083bd8a-5e26-4779-b6e2-a56ac79e341f" />
+<img width="360" height="720" alt="Screenshot_20260303_222458" src="https://github.com/user-attachments/assets/79c20ecb-4449-43dd-bf3b-28ae40f0cd33" />
+<img width="360" height="720" alt="Screenshot_20260303_222507" src="https://github.com/user-attachments/assets/52b622f9-b46c-42f4-a075-bb64fc129cf0" />
+<img width="360" height="720" alt="Screenshot_20260303_222405" src="https://github.com/user-attachments/assets/2f15a3c3-36ac-436f-80ee-665275cece8d" />
+<img width="360" height="720" alt="Screenshot_20260303_222627" src="https://github.com/user-attachments/assets/d2ea4fcd-f584-462a-8433-f03817941671" />
+<img width="360" height="720" alt="Screenshot_20260303_222603" src="https://github.com/user-attachments/assets/190a9a90-d337-4edc-8958-a1d4646b78c3" />
+<img width="360" height="720" alt="Screenshot_20260303_222545" src="https://github.com/user-attachments/assets/24c36f7d-8329-4d1f-996e-c89cf42d5af4" />
+<img width="360" height="720" alt="Screenshot_20260303_222524" src="https://github.com/user-attachments/assets/39c0c883-d62a-41c0-906c-08ae6d54982b" />
+<img width="360" height="720" alt="Screenshot_20260304_142302" src="https://github.com/user-attachments/assets/eb9d7ace-cf88-407a-94a4-5a9660b69569" />
+<img width="360" height="720" alt="Screenshot_20260304_142315" src="https://github.com/user-attachments/assets/2cee2a69-b1ff-42c5-a3fd-8fe91aa85af8" />
+
+
+> video
+ 
+
+
+https://github.com/user-attachments/assets/b9b2ef19-ca9d-4d48-83e3-162db8bc0364
+
+
+
+---
+
+## ⚙️ Getting Started
+
+### 1️⃣ Prerequisites
+- Flutter (latest stable)
+- Dart SDK
+
+### 2️⃣ Install Dependencies
+```bash
+flutter pub get
+```
+
+### 3️⃣ Generate Hive TypeAdapters
+```bash
+flutter pub run build_runner build
+```
+
+### 4️⃣ Run Tests
+```bash
+flutter test
+```
+
+### 5️⃣ Launch the App
+```bash
+flutter run
+```
+
+---
+
+## 🔮 Future Roadmap
+
+- 📈 PDF & CSV data export
+- 🔔 Smart reminder notifications
+- ⌚ Google Fit integration
+- 🍎 Apple Health sync
+- 🌙 OLED-optimized true dark mode
+- ☁ Cloud sync capability
+
+---
+
+## 💡 Why This Project Stands Out
+
+- Demonstrates advanced Flutter architecture
+- Production-ready folder structure
+- Strong separation of business logic
+- Optimized local database performance
+- Portfolio-quality UI system
+- Scalable foundation for real-world health apps
+
+---
+
+## 🤝 Contributing
+
+Contributions, suggestions, and feature requests are welcome.
+
+1. Fork the repository
+2. Create a new branch
+3. Commit your changes
+4. Submit a Pull Request
+
+---
+
+## 📄 License
+
+This project is open-source and available under the MIT License.
+
+---
+
+## 👨‍💻 Author
+
+Developed with precision and passion by  
+**Ashraf**
+
+---
+
+<p align="center">
+  Elevating daily health tracking through engineering excellence.
+</p>
