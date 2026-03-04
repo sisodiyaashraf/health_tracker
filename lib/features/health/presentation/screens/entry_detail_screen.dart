@@ -1,42 +1,138 @@
 import 'package:flutter/material.dart';
+import 'package:health_tracker/features/health/presentation/widgets/entry_detail_widgets.dart/detail_metric_grid.dart';
+import 'package:health_tracker/features/health/presentation/widgets/entry_detail_widgets.dart/detail_mood_header.dart';
+import 'package:health_tracker/features/health/presentation/widgets/entry_detail_widgets.dart/detail_reflections_card.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../data/models/health_entry.dart';
-import '../widgets/health_metric_row.dart';
+import 'package:provider/provider.dart';
+
+// Standardized lowercase package imports to fix Type Mismatch error
+import 'package:health_tracker/features/health/data/models/health_entry.dart';
+import 'package:health_tracker/features/health/presentation/providers/health_provider.dart';
+import 'package:health_tracker/core/theme/app_theme.dart';
+
+// Corrected widget imports (removed .dart from folder names)
 
 class EntryDetailScreen extends StatelessWidget {
   final HealthEntry entry;
 
   const EntryDetailScreen({super.key, required this.entry});
 
+  static const Color darkBgBase = Color(0xFF0A0A0B);
+  static const Color darkIndigoDepth = Color(0xFF1A122E);
+
+  void _confirmDelete(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        surfaceTintColor:
+            Colors.transparent, // Prevents purple tint in Material 3
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        title: const Text(
+          "Delete Entry?",
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+        content: const Text(
+          "This will permanently remove this health log from your journey.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Cancel",
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: ElevatedButton(
+              onPressed: () {
+                context.read<HealthProvider>().deleteEntry(entry);
+                Navigator.pop(context); // Close Dialog
+                Navigator.pop(context); // Go back Home
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Entry deleted successfully"),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.roseRed,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text("Delete"),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      // 1. Consistent Background Gradient
+      backgroundColor: isDark
+          ? darkBgBase
+          : Theme.of(context).colorScheme.surface,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.surface,
-              theme.colorScheme.primaryContainer.withOpacity(0.15),
+              isDark ? darkBgBase : Theme.of(context).colorScheme.surface,
+              isDark
+                  ? darkIndigoDepth.withOpacity(0.4)
+                  : Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withOpacity(0.15),
             ],
           ),
         ),
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // 2. Fixed Visibility AppBar
             SliverAppBar.large(
               pinned: true,
               backgroundColor: Colors.transparent,
-              surfaceTintColor: theme.colorScheme.surface,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: isDark ? Colors.white : Colors.black,
+                  size: 20,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppTheme.roseRed,
+                  ),
+                  onPressed: () => _confirmDelete(context),
+                ),
+                const SizedBox(width: 8),
+              ],
               title: Text(
                 DateFormat('MMMM d, yyyy').format(entry.date),
-                style: const TextStyle(fontWeight: FontWeight.w900),
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
               ),
               centerTitle: true,
             ),
@@ -44,101 +140,11 @@ class EntryDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  // 3. Header Section with Parallax-style Hero
-                  Center(
-                    child: Column(
-                      children: [
-                        Hero(
-                          tag: 'mood-${entry.date.toIso8601String()}',
-                          child: Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white30),
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: Text(
-                                _getMoodEmoji(entry.mood),
-                                style: const TextStyle(fontSize: 80),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          "You felt ${entry.mood}",
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
+                  DetailMoodHeader(entry: entry),
                   const SizedBox(height: 48),
-
-                  // 4. Metrics Row using Glassmorphism
-                  Row(
-                    children: [
-                      _buildDetailTile(
-                        context,
-                        Icons.bedtime_rounded,
-                        "${entry.sleepHours}h",
-                        "Sleep Total",
-                        AppTheme.brandPurple,
-                      ),
-                      const SizedBox(width: 16),
-                      _buildDetailTile(
-                        context,
-                        Icons.water_drop_rounded,
-                        "${entry.waterIntake}L",
-                        "Hydration",
-                        Colors.lightBlue,
-                      ),
-                    ],
-                  ),
-
+                  DetailMetricGrid(entry: entry),
                   const SizedBox(height: 40),
-
-                  // 5. Refined Notes Section
-                  const Text(
-                    "Your Reflections",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(color: Colors.white),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      (entry.note == null || entry.note!.isEmpty)
-                          ? "No notes recorded for this day."
-                          : entry.note!,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        height: 1.6,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
+                  DetailReflectionsCard(entry: entry),
                   const SizedBox(height: 40),
                 ]),
               ),
@@ -147,44 +153,5 @@ class EntryDetailScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Widget _buildDetailTile(
-    BuildContext context,
-    IconData icon,
-    String value,
-    String label,
-    Color color,
-  ) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white),
-        ),
-        child: HealthMetricRow(
-          icon: icon,
-          value: value,
-          label: label,
-          accentColor: color,
-        ),
-      ),
-    );
-  }
-
-  String _getMoodEmoji(String mood) {
-    switch (mood) {
-      case 'Good':
-        return '😊';
-      case 'Okay':
-        return '😐';
-      case 'Bad':
-        return '😔';
-      default:
-        return '🤔';
-    }
   }
 }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:health_tracker/features/health/presentation/widgets/add_entry_widgets.dart/add_entry_form_fields.dart';
+import 'package:health_tracker/features/health/presentation/widgets/add_entry_widgets.dart/add_entry_section_header.dart';
+import 'package:health_tracker/features/health/presentation/widgets/add_entry_widgets.dart/mood_selector.dart';
 import 'package:provider/provider.dart';
+import 'package:health_tracker/features/health/data/models/health_entry.dart';
+import 'package:health_tracker/features/health/presentation/providers/health_provider.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../data/models/health_entry.dart';
-import '../providers/health_provider.dart';
-import '../widgets/mood_selector.dart';
 
 class AddEntryScreen extends StatefulWidget {
   const AddEntryScreen({super.key});
@@ -19,41 +21,49 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   final _waterController = TextEditingController();
   final _noteController = TextEditingController();
 
-  // Premium Dark Mode Color Palette
   static const Color darkBgBase = Color(0xFF0A0A0B);
   static const Color darkIndigoDepth = Color(0xFF1A122E);
+  // Brand colors for the gradient
+  static const Color brandPurple = Color(0xFF673AB7);
+  static const Color deepPurple = Color(0xFF311B92);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<HealthProvider>().loadEntries();
+    });
+  }
 
   void _submitData() {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = Provider.of<HealthProvider>(context, listen: false);
-    final today = DateTime.now();
 
-    final alreadyExists = provider.entries.any(
-      (e) =>
-          e.date.year == today.year &&
-          e.date.month == today.month &&
-          e.date.day == today.day,
-    );
-
-    if (alreadyExists) {
+    if (provider.hasEntryForDate(DateTime.now())) {
       _showErrorSnackBar('Today\'s entry is already locked in!');
       return;
     }
 
     final newEntry = HealthEntry(
-      date: today,
+      date: DateTime.now(),
       mood: _selectedMood,
       sleepHours: double.parse(_sleepController.text),
       waterIntake: double.parse(_waterController.text),
       note: _noteController.text,
     );
 
-    provider.saveEntry(newEntry);
-    Navigator.pop(context);
+    provider.saveEntry(newEntry).then((success) {
+      if (success && mounted) {
+        Navigator.pop(context);
+      } else if (mounted) {
+        _showErrorSnackBar('Failed to save entry. Please try again.');
+      }
+    });
   }
 
   void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -92,7 +102,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
           slivers: [
             SliverAppBar.medium(
               pinned: true,
-              backgroundColor: Colors.transparent, // Glass effect
+              backgroundColor: Colors.transparent,
               elevation: 0,
               leading: IconButton(
                 icon: Icon(
@@ -122,40 +132,19 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSectionHeader(
-                          theme,
-                          "Daily Reflection",
-                          "How are you feeling right now?",
+                        const AddEntrySectionHeader(
+                          title: "Daily Reflection",
+                          subtitle: "How are you feeling right now?",
                         ),
                         const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.white.withOpacity(0.05)
-                                : Colors.white.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: isDark
-                                  ? Colors.white.withOpacity(0.1)
-                                  : Colors.white,
-                            ),
-                          ),
-                          child: MoodSelector(
-                            selectedMood: _selectedMood,
-                            onSelected: (mood) =>
-                                setState(() => _selectedMood = mood),
-                          ),
-                        ),
+                        _buildMoodCard(isDark),
                         const SizedBox(height: 32),
-                        _buildSectionHeader(
-                          theme,
-                          "Vital Metrics",
-                          "Input your physical data for today",
+                        const AddEntrySectionHeader(
+                          title: "Vital Metrics",
+                          subtitle: "Input your physical data for today",
                         ),
                         const SizedBox(height: 16),
-                        _buildModernField(
-                          context: context,
+                        ModernTextField(
                           controller: _sleepController,
                           label: 'Sleep Duration',
                           hint: 'Hours (e.g., 7.5)',
@@ -163,14 +152,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                           suffix: 'hrs',
                           validator: (val) {
                             final n = double.tryParse(val ?? '');
-                            if (n == null || n < 0 || n > 24)
-                              return 'Enter 0-24';
-                            return null;
+                            return (n == null || n < 0 || n > 24)
+                                ? 'Enter 0-24'
+                                : null;
                           },
                         ),
                         const SizedBox(height: 20),
-                        _buildModernField(
-                          context: context,
+                        ModernTextField(
                           controller: _waterController,
                           label: 'Water Intake',
                           hint: 'Liters (e.g., 2.0)',
@@ -178,13 +166,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                           suffix: 'L',
                           validator: (val) {
                             final n = double.tryParse(val ?? '');
-                            if (n == null || n <= 0) return 'Enter value > 0';
-                            return null;
+                            return (n == null || n <= 0)
+                                ? 'Enter value > 0'
+                                : null;
                           },
                         ),
                         const SizedBox(height: 20),
-                        _buildModernField(
-                          context: context,
+                        ModernTextField(
                           controller: _noteController,
                           label: 'Daily Notes',
                           hint: 'Any highlights or challenges?',
@@ -192,7 +180,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                           maxLines: 4,
                         ),
                         const SizedBox(height: 48),
-                        _buildSubmitButton(theme),
+                        _buildSubmitButton(),
                         const SizedBox(height: 40),
                       ],
                     ),
@@ -206,39 +194,41 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     );
   }
 
-  Widget _buildSectionHeader(ThemeData theme, String title, String subtitle) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 20,
-            letterSpacing: -0.5,
-          ),
+  Widget _buildMoodCard(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withOpacity(0.05)
+            : Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.1) : Colors.white,
         ),
-        Text(
-          subtitle,
-          style: TextStyle(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+      ),
+      child: MoodSelector(
+        selectedMood: _selectedMood,
+        onSelected: (mood) => setState(() => _selectedMood = mood),
+      ),
     );
   }
 
-  Widget _buildSubmitButton(ThemeData theme) {
+  Widget _buildSubmitButton() {
     return Container(
       width: double.infinity,
       height: 64,
       decoration: BoxDecoration(
+        // Applying the brand gradient
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [brandPurple, deepPurple],
+        ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.3),
-            blurRadius: 12,
+            color: brandPurple.withOpacity(0.35),
+            blurRadius: 15,
             offset: const Offset(0, 8),
           ),
         ],
@@ -246,85 +236,21 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       child: ElevatedButton(
         onPressed: _submitData,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.brandPurple,
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
         ),
         child: const Text(
           'Save Insights',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildModernField({
-    required BuildContext context,
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    String? suffix,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-          ),
-        ),
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          style: TextStyle(color: isDark ? Colors.white : Colors.black),
-          keyboardType: maxLines > 1
-              ? TextInputType.multiline
-              : TextInputType.numberWithOptions(decimal: true),
-          validator: validator,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(
-              color: isDark ? Colors.white38 : Colors.black38,
-            ),
-            prefixIcon: Icon(icon, color: AppTheme.brandPurple),
-            suffixText: suffix,
-            suffixStyle: const TextStyle(fontWeight: FontWeight.bold),
-            filled: true,
-            fillColor: isDark
-                ? Colors.white.withOpacity(0.05)
-                : Colors.white.withOpacity(0.6),
-            contentPadding: const EdgeInsets.all(20),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: isDark
-                  ? const BorderSide(color: Colors.white10)
-                  : BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: isDark
-                  ? const BorderSide(color: Colors.white10)
-                  : BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: const BorderSide(
-                color: AppTheme.brandPurple,
-                width: 2,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
